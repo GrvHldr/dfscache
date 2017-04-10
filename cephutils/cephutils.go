@@ -38,6 +38,7 @@ type UriRadosObj struct {
 	Uri string `json:"uri"`
 }
 
+// Instantiate new Rados obj w/ defaults
 func NewRadosObj() (*RadosObj, error) {
 	newOid := uuid.NewV4()
 	pool := PoolNamesPreffix + newOid.String()[:2]
@@ -62,6 +63,7 @@ func NewRadosObj() (*RadosObj, error) {
 	}, nil
 }
 
+// Rados object for JSON serializer
 func NewUriRadosObj(o BaseRadosObj) *UriRadosObj {
 	return &UriRadosObj{
 		BaseRadosObj: o,
@@ -69,6 +71,7 @@ func NewUriRadosObj(o BaseRadosObj) *UriRadosObj {
 	}
 }
 
+// Retrieve Rados object from Ceph storage
 func ExistingRadosObj(pool string, oid uuid.UUID) (obj *RadosObj, err error) {
 	conn, err := NewRadosConn()
 	if err != nil {
@@ -109,6 +112,7 @@ func ExistingRadosObj(pool string, oid uuid.UUID) (obj *RadosObj, err error) {
 	return
 }
 
+// Must be called on operations finish w/ Rados object
 func (o *RadosObj) Destroy() {
 	o.ioctx.Destroy()
 	o.conn.Shutdown()
@@ -117,6 +121,7 @@ func (o *RadosObj) Destroy() {
 func (o *RadosObj) WriteFromReader(rd io.Reader) (uint64, error) {
 	o.Lock()
 	defer o.Unlock()
+
 	o.bytesWritten = 0
 	bufrw := bufio.NewReadWriter(
 		bufio.NewReaderSize(rd, bufferSize),
@@ -161,6 +166,7 @@ func (o *RadosObj) ReadToWriter(wr io.Writer) (uint64, error) {
 	return o.bytesRead, nil
 }
 
+// Writer interface implementation
 func (o *RadosObj) Write(p []byte) (n int, err error) {
 	oid := o.Oid.String()
 
@@ -184,6 +190,7 @@ func (o *RadosObj) Write(p []byte) (n int, err error) {
 	return
 }
 
+// Reader interface implementation
 func (o *RadosObj) Read(p []byte) (n int, err error) {
 	oid := o.Oid.String()
 
@@ -201,6 +208,7 @@ func (o *RadosObj) Read(p []byte) (n int, err error) {
 	return
 }
 
+// ReaderAt interface implementation
 func (o *RadosObj) ReadAt(p []byte, off int64) (n int, err error) {
 	oid := o.Oid.String()
 	n, err = o.ioctx.Read(oid, p, uint64(off))
@@ -214,6 +222,7 @@ func (o *RadosObj) ReadAt(p []byte, off int64) (n int, err error) {
 	return
 }
 
+// Lock Rados object
 func (o *RadosObj) Lock() error {
 	ret, err := o.ioctx.LockExclusive(
 		o.Oid.String(),
@@ -234,11 +243,13 @@ func (o *RadosObj) Lock() error {
 	return nil
 }
 
+// Unlock Rados object
 func (o *RadosObj) Unlock() error {
 	_, err := o.ioctx.Unlock(o.Oid.String(), radosObjLockName, radosObjLockName)
 	return err
 }
 
+// Delete object from Ceph storage
 func (o *RadosObj) Delete() error {
 	oid := o.Oid.String()
 	if IsObjectLocked(o.ioctx, oid) {
@@ -248,6 +259,7 @@ func (o *RadosObj) Delete() error {
 	return o.ioctx.Delete(o.Oid.String())
 }
 
+// New connection to Ceph cluster
 func NewRadosConn() (*rados.Conn, error) {
 	conn, err := rados.NewConn()
 	if err != nil {
@@ -265,6 +277,7 @@ func NewRadosConn() (*rados.Conn, error) {
 	return conn, nil
 }
 
+// Get IO context
 func GetIoctx(c *rados.Conn, pool string) (ioctx *rados.IOContext, err error) {
 	contains := func(list []string, elem string) bool {
 		for _, i := range list {
@@ -290,6 +303,7 @@ func GetIoctx(c *rados.Conn, pool string) (ioctx *rados.IOContext, err error) {
 	return c.OpenIOContext(pool)
 }
 
+// Set object TTL attribute
 func SetObjTTL(ioctx *rados.IOContext, oid string, ttl time.Duration) error {
 	buf := make([]byte, 10)
 	binary.LittleEndian.PutUint64(buf, uint64(ttl))
@@ -297,6 +311,7 @@ func SetObjTTL(ioctx *rados.IOContext, oid string, ttl time.Duration) error {
 	return ioctx.SetXattr(oid, ttlAttrName, buf)
 }
 
+// Get object TTL attribute
 func GetObjTTL(ioctx *rados.IOContext, oid string) (time.Duration, error) {
 	buf := make([]byte, 10)
 	_, err := ioctx.GetXattr(oid, ttlAttrName, buf)
@@ -306,6 +321,7 @@ func GetObjTTL(ioctx *rados.IOContext, oid string) (time.Duration, error) {
 	return time.Duration(binary.LittleEndian.Uint64(buf)), nil
 }
 
+// Check if object is locked
 func IsObjectLocked(ioctx *rados.IOContext, oid string) bool {
 	lock, err := ioctx.ListLockers(oid, radosObjLockName)
 	if err != nil {

@@ -1,3 +1,5 @@
+// ZeroMQ client example
+
 package main
 
 import "fmt"

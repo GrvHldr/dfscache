@@ -8,6 +8,7 @@ import (
 	"github.com/ceph/go-ceph/rados"
 )
 
+// Goroutine looking for expired object in storage and deletes expired
 func garbage_collector() {
 	conn, err := cephutils.NewRadosConn()
 	if err != nil {
@@ -36,12 +37,14 @@ func garbage_collector() {
 				logger.Log.Error("Can't get pool list: ", err)
 				continue
 			}
+
 			for _, pool := range pools {
 				ioctx, err := conn.OpenIOContext(pool)
 				if err != nil {
 					logger.Log.Errorf("Can't opent pool (%s): %s", pool, err)
 					continue
 				}
+
 				err = ioctx.ListObjects(func(oid string) {
 					ttl, err := cephutils.GetObjTTL(ioctx, oid)
 					if err != nil {
@@ -59,6 +62,7 @@ func garbage_collector() {
 					ioctx.Destroy()
 					continue
 				}
+
 				ioctx.Destroy()
 			}
 		}
