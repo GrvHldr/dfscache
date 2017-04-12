@@ -143,7 +143,7 @@ func (o *RadosObj) WriteFromReader(rd io.Reader) (uint64, error) {
 	return o.Size, nil
 }
 
-func (o *RadosObj) ReadToWriter(wr io.Writer) (uint64, error) {
+func (o *RadosObj) ReadToWriter(wr io.Writer, off, len int64) (uint64, error) {
 	o.bytesRead = 0
 	//bufReader := bufio.NewReaderSize(o, bufferSize)
 	//written, err := io.Copy(wr, bufReader)
@@ -156,7 +156,7 @@ func (o *RadosObj) ReadToWriter(wr io.Writer) (uint64, error) {
 	o.Lock()
 	defer o.Unlock()
 
-	reader := io.NewSectionReader(o, 0, int64(o.Size))
+	reader := io.NewSectionReader(o, off, len)
 	written, err := io.Copy(wr, reader)
 	if err != nil {
 		return 0, err
