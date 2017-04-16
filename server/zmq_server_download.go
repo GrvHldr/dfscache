@@ -10,7 +10,7 @@ import (
 
 const ZMQPIPELINE = 10
 
-func BindZMq() {
+func BindZMqDownloader() {
 	router, err := zmq.NewSocket(zmq.ROUTER)
 	if err != nil {
 		logger.Log.Error(err)
@@ -26,7 +26,7 @@ func BindZMq() {
 		return
 	}
 
-	logger.Log.Info("Started ZMQ listener on tcp://0.0.0.0:5555")
+	logger.Log.Info("Started ZMQ downloader on tcp://0.0.0.0:5555")
 
 	for {
 		msg, err := router.RecvMessage(0)

@@ -8,21 +8,24 @@ import (
 	"github.com/satori/go.uuid"
 	"io"
 	"time"
+	"sync"
 )
 
 const (
 	PoolNamesPreffix = "dsfcache-"
 	objectTTL        = time.Duration(1 * time.Hour)
 	ttlAttrName      = "TTL"
+	fnameArrtName    = "FILENAME"
 	bufferSize       = 8192
 	radosObjLockName = "lock"
 )
 
 type BaseRadosObj struct {
-	Pool string        `json:"pool"`
-	Oid  uuid.UUID     `json:"oid"`
-	Size uint64        `json:"size"`
-	TTL  time.Duration `json:"exparation"`
+	Pool     string        `json:"pool"`
+	Oid      uuid.UUID     `json:"oid"`
+	Size     uint64        `json:"size"`
+	TTL      time.Duration `json:"exparation"`
+	FileName string        `json:"file_name"`
 }
 
 type RadosObj struct {
@@ -33,13 +36,18 @@ type RadosObj struct {
 	bytesRead    uint64
 }
 
+type LockRadosObj struct {
+	sync.Mutex
+	RadosObj
+}
+
 type UriRadosObj struct {
 	BaseRadosObj
 	Uri string `json:"uri"`
 }
 
 // Instantiate new Rados obj w/ defaults
-func NewRadosObj() (*RadosObj, error) {
+func NewRadosObj(fname string) (*RadosObj, error) {
 	newOid := uuid.NewV4()
 	pool := PoolNamesPreffix + newOid.String()[:2]
 	conn, err := NewRadosConn()
@@ -54,9 +62,10 @@ func NewRadosObj() (*RadosObj, error) {
 
 	return &RadosObj{
 		BaseRadosObj: BaseRadosObj{
-			Pool: pool,
-			Oid:  newOid,
-			TTL:  time.Duration(time.Now().UTC().Add(objectTTL).Unix()),
+			Pool:     pool,
+			Oid:      newOid,
+			TTL:      time.Duration(time.Now().UTC().Add(objectTTL).Unix()),
+			FileName: fname,
 		},
 		conn:  conn,
 		ioctx: ioctx,
@@ -98,12 +107,20 @@ func ExistingRadosObj(pool string, oid uuid.UUID) (obj *RadosObj, err error) {
 		return
 	}
 
+	fname, err := GetObjFileName(ioctx, oid.String())
+	if err != nil {
+		ioctx.Destroy()
+		conn.Shutdown()
+		return
+	}
+
 	obj = &RadosObj{
 		BaseRadosObj: BaseRadosObj{
-			Pool: pool,
-			Oid:  oid,
-			Size: stat.Size,
-			TTL:  ttl,
+			Pool:     pool,
+			Oid:      oid,
+			Size:     stat.Size,
+			TTL:      ttl,
+			FileName: fname,
 		},
 		conn:  conn,
 		ioctx: ioctx,
@@ -118,9 +135,27 @@ func (o *RadosObj) Destroy() {
 	o.conn.Shutdown()
 }
 
+// Sync object attributes to Ceph storage
+func (o *RadosObj) SyncAttributes() error {
+	// Save TTL
+	buf := make([]byte, 10)
+	binary.LittleEndian.PutUint64(buf, uint64(o.TTL))
+
+	if err := o.ioctx.SetXattr(o.Oid.String(), ttlAttrName, buf); err != nil {
+		return err
+	}
+
+	// Save FileName
+	if err := o.ioctx.SetXattr(o.Oid.String(), fnameArrtName, []byte(o.FileName)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (o *RadosObj) WriteFromReader(rd io.Reader) (uint64, error) {
-	o.Lock()
-	defer o.Unlock()
+	o.LockRados()
+	defer o.UnlockRados()
 
 	o.bytesWritten = 0
 	bufrw := bufio.NewReadWriter(
@@ -133,11 +168,12 @@ func (o *RadosObj) WriteFromReader(rd io.Reader) (uint64, error) {
 	}
 	bufrw.Writer.Flush()
 
-	// Set TTL attribute
-	err = SetObjTTL(o.ioctx, o.Oid.String(), o.TTL)
+	// Save attributes
+	err = o.SyncAttributes()
 	if err != nil {
 		return 0, err
 	}
+
 	o.Size = uint64(written)
 
 	return o.Size, nil
@@ -153,8 +189,8 @@ func (o *RadosObj) ReadToWriter(wr io.Writer, off, len int64) (uint64, error) {
 	//
 	//return uint64(written), nil
 
-	o.Lock()
-	defer o.Unlock()
+	o.LockRados()
+	defer o.UnlockRados()
 
 	reader := io.NewSectionReader(o, off, len)
 	written, err := io.Copy(wr, reader)
@@ -190,10 +226,17 @@ func (o *RadosObj) Write(p []byte) (n int, err error) {
 	return
 }
 
+func (o *RadosObj) WriteProgress() uint64 {
+	return o.bytesWritten
+}
+
+func (o *RadosObj) ReadProgress() uint64 {
+	return o.bytesRead
+}
+
 // Reader interface implementation
 func (o *RadosObj) Read(p []byte) (n int, err error) {
 	oid := o.Oid.String()
-
 
 	n, err = o.ioctx.Read(oid, p, o.bytesRead)
 	if err != nil {
@@ -223,7 +266,7 @@ func (o *RadosObj) ReadAt(p []byte, off int64) (n int, err error) {
 }
 
 // Lock Rados object
-func (o *RadosObj) Lock() error {
+func (o *RadosObj) LockRados() error {
 	ret, err := o.ioctx.LockExclusive(
 		o.Oid.String(),
 		radosObjLockName,
@@ -244,12 +287,12 @@ func (o *RadosObj) Lock() error {
 }
 
 // Unlock Rados object
-func (o *RadosObj) Unlock() error {
+func (o *RadosObj) UnlockRados() error {
 	_, err := o.ioctx.Unlock(o.Oid.String(), radosObjLockName, radosObjLockName)
 	return err
 }
 
-// Delete object from Ceph storage
+// Unregister object from Ceph storage
 func (o *RadosObj) Delete() error {
 	oid := o.Oid.String()
 	if IsObjectLocked(o.ioctx, oid) {
@@ -303,14 +346,6 @@ func GetIoctx(c *rados.Conn, pool string) (ioctx *rados.IOContext, err error) {
 	return c.OpenIOContext(pool)
 }
 
-// Set object TTL attribute
-func SetObjTTL(ioctx *rados.IOContext, oid string, ttl time.Duration) error {
-	buf := make([]byte, 10)
-	binary.LittleEndian.PutUint64(buf, uint64(ttl))
-
-	return ioctx.SetXattr(oid, ttlAttrName, buf)
-}
-
 // Get object TTL attribute
 func GetObjTTL(ioctx *rados.IOContext, oid string) (time.Duration, error) {
 	buf := make([]byte, 10)
@@ -319,6 +354,17 @@ func GetObjTTL(ioctx *rados.IOContext, oid string) (time.Duration, error) {
 		return 0, err
 	}
 	return time.Duration(binary.LittleEndian.Uint64(buf)), nil
+}
+
+// Get object FileName attribute
+func GetObjFileName(ioctx *rados.IOContext, oid string) (string, error) {
+	buf := make([]byte, 255)
+	_, err := ioctx.GetXattr(oid, fnameArrtName, buf)
+	if err != nil {
+		return "", err
+	}
+
+	return string(buf), nil
 }
 
 // Check if object is locked

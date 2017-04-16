@@ -9,8 +9,8 @@ import (
 	"github.com/satori/go.uuid"
 	"mime/multipart"
 	"net/http"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -113,7 +113,7 @@ func serveFileUpload(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	}
 	defer fd.Close()
 
-	newObj, err := cephutils.NewRadosObj()
+	newObj, err := cephutils.NewRadosObj(fh.Filename)
 	if err != nil {
 		logger.Log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -131,10 +131,11 @@ func serveFileUpload(w http.ResponseWriter, r *http.Request, _ httprouter.Params
 	result, err := json.Marshal(
 		cephutils.NewUriRadosObj(
 			cephutils.BaseRadosObj{
-				Pool: newObj.Pool,
-				Oid:  newObj.Oid,
-				Size: newObj.Size,
-				TTL:  newObj.TTL,
+				Pool:     newObj.Pool,
+				Oid:      newObj.Oid,
+				Size:     newObj.Size,
+				TTL:      newObj.TTL,
+				FileName: newObj.FileName,
 			},
 		),
 	)
@@ -156,7 +157,11 @@ func serveFileDownload(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 	defer obj.Destroy()
 
-	w.Header().Set("Content-Disposition", "attachment; filename="+obj.Oid.String())
+	fname := obj.FileName
+	if fname == "" {
+		fname = obj.Oid.String()
+	}
+	w.Header().Set("Content-Disposition", "attachment; filename="+fname)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 	w.Header().Set("Accept-Ranges", "bytes")
 

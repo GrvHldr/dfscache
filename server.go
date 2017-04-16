@@ -70,8 +70,11 @@ func garbage_collector() {
 }
 
 func main() {
-	//ZMQ server
-	go server.BindZMq()
+	//ZMQ downloader server
+	go server.BindZMqDownloader()
+
+	//ZMQ uploader server
+	go server.BindZMqUploader()
 
 	// Run GC
 	go garbage_collector()
