@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	CHUNKSIZE = 10 // Chunk size in bytes
+	CHUNKSIZE = 25000 // Chunk size in bytes
 )
 
 func main() {
