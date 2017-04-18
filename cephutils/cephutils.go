@@ -9,14 +9,12 @@ import (
 	"io"
 	"time"
 	"sync"
+	"github.com/GrvHldr/dfscache/config"
 )
 
 const (
-	PoolNamesPreffix = "dsfcache-"
-	objectTTL        = time.Duration(1 * time.Hour)
 	ttlAttrName      = "TTL"
 	fnameArrtName    = "FILENAME"
-	bufferSize       = 8192
 	radosObjLockName = "lock"
 )
 
@@ -49,7 +47,7 @@ type UriRadosObj struct {
 // Instantiate new Rados obj w/ defaults
 func NewRadosObj(fname string) (*RadosObj, error) {
 	newOid := uuid.NewV4()
-	pool := PoolNamesPreffix + newOid.String()[:2]
+	pool := config.Config.CEPH_OPTIONS.POOL_NAMES_PREFIX + newOid.String()[:2]
 	conn, err := NewRadosConn()
 	if err != nil {
 		return nil, err
@@ -64,7 +62,7 @@ func NewRadosObj(fname string) (*RadosObj, error) {
 		BaseRadosObj: BaseRadosObj{
 			Pool:     pool,
 			Oid:      newOid,
-			TTL:      time.Duration(time.Now().UTC().Add(objectTTL).Unix()),
+			TTL:      time.Duration(time.Now().UTC().Add(time.Duration(config.Config.CEPH_OPTIONS.OBJECT_TTL) * time.Second).Unix()),
 			FileName: fname,
 		},
 		conn:  conn,
@@ -159,8 +157,8 @@ func (o *RadosObj) WriteFromReader(rd io.Reader) (uint64, error) {
 
 	o.bytesWritten = 0
 	bufrw := bufio.NewReadWriter(
-		bufio.NewReaderSize(rd, bufferSize),
-		bufio.NewWriterSize(o, bufferSize),
+		bufio.NewReaderSize(rd, config.Config.CEPH_OPTIONS.RW_BUFFER_SIZE),
+		bufio.NewWriterSize(o, config.Config.CEPH_OPTIONS.RW_BUFFER_SIZE),
 	)
 	written, err := io.Copy(bufrw.Writer, bufrw.Reader)
 	if err != nil {
@@ -309,7 +307,7 @@ func NewRadosConn() (*rados.Conn, error) {
 		return nil, fmt.Errorf("Unable to create new connection: ", err)
 	}
 
-	if err = conn.ReadDefaultConfigFile(); err != nil {
+	if err = conn.ReadConfigFile(config.Config.CEPH_OPTIONS.CONFIG_FILE); err != nil {
 		return nil, fmt.Errorf("Can't read default config file: ", err)
 	}
 

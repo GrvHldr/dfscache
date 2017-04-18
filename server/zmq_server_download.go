@@ -2,13 +2,12 @@ package server
 
 import (
 	"github.com/GrvHldr/dfscache/cephutils"
+	"github.com/GrvHldr/dfscache/config"
 	"github.com/GrvHldr/dfscache/logger"
 	zmq "github.com/pebbe/zmq4"
 	"github.com/satori/go.uuid"
 	"strconv"
 )
-
-const ZMQPIPELINE = 10
 
 func BindZMqDownloader() {
 	router, err := zmq.NewSocket(zmq.ROUTER)
@@ -17,16 +16,16 @@ func BindZMqDownloader() {
 		return
 	}
 	defer router.Close()
-	router.SetRcvhwm(ZMQPIPELINE * 2)
-	router.SetSndhwm(ZMQPIPELINE * 2)
+	router.SetRcvhwm(config.Config.ZMQ_OPTIONS.DOWNLOAD_PIPELINE * 2)
+	router.SetSndhwm(config.Config.ZMQ_OPTIONS.DOWNLOAD_PIPELINE * 2)
 
-	err = router.Bind("tcp://0.0.0.0:5555")
+	err = router.Bind(config.Config.ZMQ_OPTIONS.LISTEN_DOWNLOAD)
 	if err != nil {
 		logger.Log.Error(err)
 		return
 	}
 
-	logger.Log.Info("Started ZMQ downloader on tcp://0.0.0.0:5555")
+	logger.Log.Infof("Started ZMQ downloader on %s", config.Config.ZMQ_OPTIONS.LISTEN_DOWNLOAD)
 
 	for {
 		msg, err := router.RecvMessage(0)
@@ -40,29 +39,29 @@ func BindZMqDownloader() {
 		err = oid.Scan(stroid)
 		if err != nil {
 			logger.Log.Error("Invalid OID: ", err)
-			router.SendMessage(identity,[]byte{})
+			router.SendMessage(identity, []byte{})
 			continue
 		}
 
 		offset, err := strconv.ParseInt(stroffset, 10, 64)
 		if err != nil {
 			logger.Log.Error("Invalid offset: ", err)
-			router.SendMessage(identity,[]byte{})
+			router.SendMessage(identity, []byte{})
 			continue
 		}
 
 		chunksize, err := strconv.Atoi(strchunksize)
 		if err != nil {
 			logger.Log.Error("Invalid offset: ", err)
-			router.SendMessage(identity,[]byte{})
+			router.SendMessage(identity, []byte{})
 			continue
 		}
 
-		pool := cephutils.PoolNamesPreffix + string(stroid[:2])
+		pool := config.Config.CEPH_OPTIONS.POOL_NAMES_PREFIX + string(stroid[:2])
 		obj, err := cephutils.ExistingRadosObj(pool, oid)
 		if err != nil {
 			logger.Log.Errorf("Rados object (%s) fetch error: %s", stroid, err)
-			router.SendMessage(identity,[]byte{})
+			router.SendMessage(identity, []byte{})
 			continue
 		}
 

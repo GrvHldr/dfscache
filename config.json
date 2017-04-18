@@ -1,0 +1,19 @@
+{
+  "CEPH_OPTIONS": {
+    "CONFIG_FILE": "/etc/ceph/ceph.conf",
+    "POOL_NAMES_PREFIX": "dsfcache-",
+    "OBJECT_TTL": 3600,
+    "RW_BUFFER_SIZE": 8192,
+    "GC_RUN_INTERVAL": 10
+  },
+  "ZMQ_OPTIONS": {
+    "LISTEN_DOWNLOAD": "tcp://0.0.0.0:5555",
+    "LISTEN_UPLOAD": "tcp://0.0.0.0:6666",
+    "DOWNLOAD_PIPELINE": 10
+  },
+  "HTTP_OPTIONS": {
+    "LISTEN": "0.0.0.0:8080",
+    "MAX_MEMORY_FORM_PARSE": 131072,
+    "HTTP_UPLOAD_CONTENT_FIELD_NAME": "content"
+  }
+}

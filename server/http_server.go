@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/GrvHldr/dfscache/cephutils"
+	"github.com/GrvHldr/dfscache/config"
 	"github.com/GrvHldr/dfscache/logger"
 	"github.com/julienschmidt/httprouter"
 	"github.com/satori/go.uuid"
@@ -13,12 +14,7 @@ import (
 	"strings"
 )
 
-const (
-	maxMemoryFormParse   = 131072
-	bytesHeader          = "bytes="
-	contentFormFieldName = "content"
-	httpListenOn         = "0.0.0.0:8080"
-)
+const bytesHeader = "bytes="
 
 type httpRange struct {
 	start  int64
@@ -85,14 +81,15 @@ func parseRange(s string, maxsize int64) ([]httpRange, error) {
 }
 
 func getContentMultipartFormData(r *http.Request) (*multipart.FileHeader, error) {
-	if err := r.ParseMultipartForm(maxMemoryFormParse); err != nil {
+	if err := r.ParseMultipartForm(config.Config.HTTP_OPTIONS.MAX_MEMORY_FORM_PARSE); err != nil {
 		return nil, err
 	}
-	if _, ok := r.MultipartForm.File[contentFormFieldName]; !ok {
-		return nil, fmt.Errorf("'%s' not found in uploaded data", contentFormFieldName)
+	contentName := config.Config.HTTP_OPTIONS.HTTP_UPLOAD_CONTENT_FIELD_NAME
+	if _, ok := r.MultipartForm.File[contentName]; !ok {
+		return nil, fmt.Errorf("'%s' not found in uploaded data", contentName)
 	}
 
-	return r.MultipartForm.File[contentFormFieldName][0], nil
+	return r.MultipartForm.File[contentName][0], nil
 }
 
 func serveIndex(_ http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
@@ -212,7 +209,7 @@ func serveFileDelete(w http.ResponseWriter, _ *http.Request, p httprouter.Params
 func retrieveRadosObj(p httprouter.Params) (obj *cephutils.RadosObj, err error, rc int) {
 	poolName := p.ByName("pool")
 	stroid := p.ByName("oid")
-	if !strings.HasPrefix(poolName, cephutils.PoolNamesPreffix) {
+	if !strings.HasPrefix(poolName, config.Config.CEPH_OPTIONS.POOL_NAMES_PREFIX) {
 		err, rc = fmt.Errorf("Invalid data pool name"), http.StatusBadRequest
 		return
 	}
@@ -241,6 +238,6 @@ func Run() {
 	router.GET("/download/:pool/:oid", serveFileDownload)
 	router.DELETE("/delete/:pool/:oid", serveFileDelete)
 
-	logger.Log.Infof("HTTP Listening on '%s'", httpListenOn)
-	logger.Log.Fatal(http.ListenAndServe(httpListenOn, router))
+	logger.Log.Infof("HTTP Listening on '%s'", config.Config.HTTP_OPTIONS.LISTEN)
+	logger.Log.Fatal(http.ListenAndServe(config.Config.HTTP_OPTIONS.LISTEN, router))
 }

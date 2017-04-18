@@ -1,11 +1,12 @@
 package server
 
 import (
-	"github.com/GrvHldr/dfscache/cephutils"
-	"github.com/GrvHldr/dfscache/logger"
-	zmq "github.com/pebbe/zmq4"
 	"encoding/binary"
 	"errors"
+	"github.com/GrvHldr/dfscache/cephutils"
+	"github.com/GrvHldr/dfscache/config"
+	"github.com/GrvHldr/dfscache/logger"
+	zmq "github.com/pebbe/zmq4"
 	"sync"
 )
 
@@ -66,7 +67,7 @@ func BindZMqUploader() {
 	defer frontend.Close()
 	frontend.SetRcvhwm(1)
 	frontend.SetSndhwm(1)
-	err = frontend.Bind("tcp://0.0.0.0:6666")
+	err = frontend.Bind(config.Config.ZMQ_OPTIONS.LISTEN_UPLOAD)
 	if err != nil {
 		logger.Log.Error(err)
 		return
@@ -91,7 +92,7 @@ func BindZMqUploader() {
 		go backendWorker(z)
 	}
 
-	logger.Log.Info("Started ZMQ uploader on tcp://0.0.0.0:6666")
+	logger.Log.Infof("Started ZMQ uploader on %s", config.Config.ZMQ_OPTIONS.LISTEN_UPLOAD)
 
 	// Start ZMQ proxy between backend and frontend
 	err = zmq.Proxy(frontend, backend, nil)
