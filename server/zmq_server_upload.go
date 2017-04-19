@@ -87,7 +87,7 @@ func BindZMqUploader() {
 	}
 
 	// Start backend workers
-	for i := 0; i < 5; i++ {
+	for i := 0; i < config.Config.ZMQ_OPTIONS.NUM_UPLOAD_WORKERS; i++ {
 		z := i
 		go backendWorker(z)
 	}

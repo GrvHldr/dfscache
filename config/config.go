@@ -7,9 +7,10 @@ import (
 )
 
 type zmqConfig struct {
-	LISTEN_DOWNLOAD   string
-	LISTEN_UPLOAD     string
-	DOWNLOAD_PIPELINE int
+	LISTEN_DOWNLOAD    string
+	LISTEN_UPLOAD      string
+	DOWNLOAD_PIPELINE  int
+	NUM_UPLOAD_WORKERS int
 }
 
 type httpConfig struct {

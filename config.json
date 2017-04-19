@@ -9,7 +9,8 @@
   "ZMQ_OPTIONS": {
     "LISTEN_DOWNLOAD": "tcp://0.0.0.0:5555",
     "LISTEN_UPLOAD": "tcp://0.0.0.0:6666",
-    "DOWNLOAD_PIPELINE": 10
+    "DOWNLOAD_PIPELINE": 10,
+    "NUM_UPLOAD_WORKERS": 5
   },
   "HTTP_OPTIONS": {
     "LISTEN": "0.0.0.0:8080",
