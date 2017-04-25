@@ -12,7 +12,7 @@ import (
 func GarbageCollector() {
 	conn, err := cephutils.NewRadosConn()
 	if err != nil {
-		logger.Log.Errorf("Can't create new Rados connection: %s. Exiting", err)
+		logger.Log.Fatalf("Can't create new Rados connection: %s. Exiting", err)
 		return
 	}
 	defer conn.Shutdown()

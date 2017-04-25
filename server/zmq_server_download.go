@@ -12,7 +12,7 @@ import (
 func BindZMqDownloader() {
 	router, err := zmq.NewSocket(zmq.ROUTER)
 	if err != nil {
-		logger.Log.Error(err)
+		logger.Log.Fatal(err)
 		return
 	}
 	defer router.Close()
@@ -21,7 +21,7 @@ func BindZMqDownloader() {
 
 	err = router.Bind(config.Config.ZMQ_OPTIONS.LISTEN_DOWNLOAD)
 	if err != nil {
-		logger.Log.Error(err)
+		logger.Log.Fatal(err)
 		return
 	}
 

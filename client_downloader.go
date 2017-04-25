@@ -20,7 +20,8 @@ func main() {
 	flag.StringVar(&stroid, "oid", "", "Rados ObjectId")
 	flag.Parse()
 
-	credit = server.ZMQPIPELINE
+	// Download pipeline
+	credit = 10
 
 	dealer, err := zmq.NewSocket(zmq.DEALER)
 	if err != nil {

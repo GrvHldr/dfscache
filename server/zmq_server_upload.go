@@ -61,29 +61,25 @@ func BindZMqUploader() {
 	// Listen frontend
 	frontend, err := zmq.NewSocket(zmq.ROUTER)
 	if err != nil {
-		logger.Log.Error(err)
-		return
+		logger.Log.Fatal(err)
 	}
 	defer frontend.Close()
 	frontend.SetRcvhwm(1)
 	frontend.SetSndhwm(1)
 	err = frontend.Bind(config.Config.ZMQ_OPTIONS.LISTEN_UPLOAD)
 	if err != nil {
-		logger.Log.Error(err)
-		return
+		logger.Log.Fatal(err)
 	}
 
 	// Listen backend
 	backend, err := zmq.NewSocket(zmq.DEALER)
 	if err != nil {
-		logger.Log.Error(err)
-		return
+		logger.Log.Fatal(err)
 	}
 	defer backend.Close()
 	err = backend.Bind("inproc://backend")
 	if err != nil {
-		logger.Log.Error(err)
-		return
+		logger.Log.Fatal(err)
 	}
 
 	// Start backend workers
@@ -103,13 +99,12 @@ func backendWorker(i int) {
 	intbuf := make([]byte, 8)
 	sock, err := zmq.NewSocket(zmq.DEALER)
 	if err != nil {
-		logger.Log.Error(err)
-		return
+		logger.Log.Fatal(err)
 	}
 	defer sock.Close()
 	err = sock.Connect("inproc://backend")
 	if err != nil {
-		logger.Log.Error(err)
+		logger.Log.Fatal(err)
 		return
 	}
 
