@@ -3,11 +3,24 @@
 2. Install LlibRados devel: sudo apt-get install librados-dev librbd-dev
 3. Install ZMQ library dev: sudo apt-get install libzmq3-dev
 
-### Build & install server
-`GOBIN=$GOPATH/bin go install server.go`
+### Build and install all-in-one server
+Includes ZMQ upload/download support, HTTP access and Garbage Collector  
+`GOBIN=$GOPATH/bin go install serve_all_in_one.go`
 
-### Build % install ZMQ client
-`GOBIN=$GOPATH/bin go install client.go`
+### Build and install HTTP server only
+`GOBIN=$GOPATH/bin go install serve_http.go`
+
+### Build and install ZMQ server only
+`GOBIN=$GOPATH/bin go install serve_zmq.go`
+
+### Build and install Garbage Collector
+`GOBIN=$GOPATH/bin go install start_gc.go`
+
+### Build and install ZMQ downloader test client
+`GOBIN=$GOPATH/bin go install client_downloader.go`
+
+### Build and install ZMQ uploader test client
+`GOBIN=$GOPATH/bin go install client_uploader.go`
 
 ##Interact with server
 ###Upload file to storage
@@ -39,5 +52,8 @@ Example:
 
 >curl -X DELETE http://localhost:9999/delete/dsfcache-ba/ba601f66-6f58-497a-a0c9-7e8ff21acf9b
 
+###Upload file through ZMQ protocol
+`GOBIN=$GOPATH/bin/client_uploader -file_name <filename>`
+
 ###Get file by ZMQ protocol
-`GOBIN=$GOPATH/bin/client -oid <object_id>`
+`GOBIN=$GOPATH/bin/client_downloader -oid <object_id>`

@@ -21,6 +21,11 @@ func main() {
 	flag.StringVar(&filename, "file_name", "", "File name to upload")
 	flag.Parse()
 
+	if filename == "" {
+		logger.Log.Error("File name to upload is not provided")
+		return
+	}
+
 	fd, err := os.Open(filename)
 	if err != nil {
 		logger.Log.Error("Can't open file for reading: ", err)
