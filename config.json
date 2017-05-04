@@ -19,6 +19,8 @@
   "HTTP_OPTIONS": {
     "LISTEN": "0.0.0.0:8080",
     "MAX_MEMORY_FORM_PARSE": 131072,
-    "HTTP_UPLOAD_CONTENT_FIELD_NAME": "content"
+    "HTTP_UPLOAD_CONTENT_FIELD_NAME": "content",
+    "CERT_FILE": "server.crt",
+    "CERT_KEY_FILE": "server.key"
   }
 }

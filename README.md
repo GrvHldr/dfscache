@@ -3,6 +3,10 @@
 2. Install LlibRados devel: sudo apt-get install librados-dev librbd-dev
 3. Install ZMQ library dev: sudo apt-get install libzmq3-dev
 
+### Self-signed SSL certificate generation
+Generate private key : `openssl genrsa -out server.key 2048`  
+Generation of self-signed(x509) public key based on the private key: `openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650`
+
 ### Build and install all-in-one server
 Includes ZMQ upload/download support, HTTP access and Garbage Collector  
 `GOBIN=$GOPATH/bin go install serve_all_in_one.go`

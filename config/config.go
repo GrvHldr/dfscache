@@ -21,6 +21,8 @@ type httpConfig struct {
 	LISTEN                         string
 	MAX_MEMORY_FORM_PARSE          int64
 	HTTP_UPLOAD_CONTENT_FIELD_NAME string
+	CERT_FILE                      string
+	CERT_KEY_FILE                  string
 }
 
 type cephConfig struct {

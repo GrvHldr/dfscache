@@ -238,6 +238,11 @@ func Run() {
 	router.GET("/download/:pool/:oid", serveFileDownload)
 	router.DELETE("/delete/:pool/:oid", serveFileDelete)
 
-	logger.Log.Infof("HTTP Listening on '%s'", config.Config.HTTP_OPTIONS.LISTEN)
-	logger.Log.Fatal(http.ListenAndServe(config.Config.HTTP_OPTIONS.LISTEN, router))
+	logger.Log.Infof("HTTPS Listening on '%s'", config.Config.HTTP_OPTIONS.LISTEN)
+	logger.Log.Fatal(http.ListenAndServeTLS(
+		config.Config.HTTP_OPTIONS.LISTEN,
+		config.Config.HTTP_OPTIONS.CERT_FILE,
+		config.Config.HTTP_OPTIONS.CERT_KEY_FILE,
+		router,
+	))
 }
