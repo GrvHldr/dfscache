@@ -10,12 +10,19 @@ import (
 )
 
 func BindZMqDownloader() {
+	// Start Authentication process
+	zmq.AuthSetVerbose(true)
+	zmq.AuthStart()
+	zmq.AuthCurveAdd("*", config.Config.ZMQ_OPTIONS.Z85_PUBLIC_CLIENT_KEY)
+
 	router, err := zmq.NewSocket(zmq.ROUTER)
 	if err != nil {
 		logger.Log.Fatal(err)
 		return
 	}
 	defer router.Close()
+
+	router.ServerAuthCurve("*", config.Config.ZMQ_OPTIONS.Z85_PRIVATE_KEY)
 	router.SetRcvhwm(config.Config.ZMQ_OPTIONS.DOWNLOAD_PIPELINE * 2)
 	router.SetSndhwm(config.Config.ZMQ_OPTIONS.DOWNLOAD_PIPELINE * 2)
 

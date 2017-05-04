@@ -8,10 +8,13 @@ import (
 )
 
 type zmqConfig struct {
-	LISTEN_DOWNLOAD    string
-	LISTEN_UPLOAD      string
-	DOWNLOAD_PIPELINE  int
-	NUM_UPLOAD_WORKERS int
+	LISTEN_DOWNLOAD       string
+	LISTEN_UPLOAD         string
+	DOWNLOAD_PIPELINE     int
+	NUM_UPLOAD_WORKERS    int
+	Z85_PUBLIC_KEY        string
+	Z85_PRIVATE_KEY       string
+	Z85_PUBLIC_CLIENT_KEY string
 }
 
 type httpConfig struct {
@@ -34,10 +37,9 @@ type serverConfig struct {
 	HTTP_OPTIONS httpConfig
 }
 
-
 type SetFlagString struct {
 	IsSet bool
-	Val string
+	Val   string
 }
 
 func (f *SetFlagString) String() string {
@@ -51,10 +53,9 @@ func (f *SetFlagString) Set(s string) error {
 	return nil
 }
 
-
 type SetFlagInt struct {
 	IsSet bool
-	Val int
+	Val   int
 }
 
 func (f *SetFlagInt) String() string {
@@ -71,7 +72,7 @@ func (f *SetFlagInt) Set(s string) error {
 
 type SetFlagInt64 struct {
 	IsSet bool
-	Val int64
+	Val   int64
 }
 
 func (f *SetFlagInt64) String() string {
@@ -85,7 +86,6 @@ func (f *SetFlagInt64) Set(s string) error {
 
 	return err
 }
-
 
 var Config = new(serverConfig)
 

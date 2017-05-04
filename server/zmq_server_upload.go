@@ -58,12 +58,19 @@ func (z zClients) Unregister(zid string) error {
 }
 
 func BindZMqUploader() {
+	// Start Authentication process
+	zmq.AuthSetVerbose(true)
+	zmq.AuthStart()
+	zmq.AuthCurveAdd("*", config.Config.ZMQ_OPTIONS.Z85_PUBLIC_CLIENT_KEY)
+
 	// Listen frontend
 	frontend, err := zmq.NewSocket(zmq.ROUTER)
 	if err != nil {
 		logger.Log.Fatal(err)
 	}
 	defer frontend.Close()
+
+	frontend.ServerAuthCurve("*", config.Config.ZMQ_OPTIONS.Z85_PRIVATE_KEY)
 	frontend.SetRcvhwm(1)
 	frontend.SetSndhwm(1)
 	err = frontend.Bind(config.Config.ZMQ_OPTIONS.LISTEN_UPLOAD)
@@ -120,9 +127,9 @@ func backendWorker(i int) {
 			// Client is not registered. Header received
 			size := binary.LittleEndian.Uint64(parts[2])
 			if err = zClientsMap.RegisterNew(identity, string(parts[1]), size); err == nil {
-				sock.SendMessage(identity, "ACK")
+				sock.SendMessage(identity, "ACK", zClientsMap[identity].Oid.String())
 			} else {
-				sock.SendMessage(identity, "NAK")
+				sock.SendMessage(identity, "NAK", "")
 			}
 			continue
 		}

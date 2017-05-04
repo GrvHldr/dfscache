@@ -10,11 +10,14 @@ import (
 	"encoding/binary"
 )
 
-const (
-	CHUNKSIZE = 25000 // Chunk size in bytes
-)
-
 func main() {
+	const (
+		CHUNKSIZE = 25000 // Chunk size in bytes
+		SERVER_PUBLIC_KEY = "3>v/vSk6K(WoH?&[lNt@PKBJbj&13xL^B3Gi@^zY"
+		PUBLIC_CLIENT_KEY = "2(]@b)A5u}(p&p.xtQ>l.Y>Fzi)NDF*6GqE23zPY"
+		PRIVATE_CLIENT_KEY = "qlBVy1z/?5PA&4w(hF7F&qOH{0yz.@0&9z!ZK2yL"
+	)
+
 	var filename string
 	var offset int64
 
@@ -47,6 +50,7 @@ func main() {
 	}
 	defer dealer.Close()
 
+	dealer.ClientAuthCurve(SERVER_PUBLIC_KEY, PUBLIC_CLIENT_KEY, PRIVATE_CLIENT_KEY)
 	err = dealer.Connect("tcp://127.0.0.1:6666")
 	if err != nil {
 		logger.Log.Error(err)
@@ -68,8 +72,9 @@ func main() {
 
 	parts, err := dealer.RecvMessage(0)
 	if parts[0] == "ACK" {
-		logger.Log.Info("Established connection")
+		logger.Log.Info("Established connection, OID:", parts[1])
 	} else {
+		logger.Log.Error("Can't establish ZMQ connection")
 		return
 	}
 

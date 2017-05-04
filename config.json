@@ -10,7 +10,11 @@
     "LISTEN_DOWNLOAD": "tcp://0.0.0.0:5555",
     "LISTEN_UPLOAD": "tcp://0.0.0.0:6666",
     "DOWNLOAD_PIPELINE": 10,
-    "NUM_UPLOAD_WORKERS": 5
+    "NUM_UPLOAD_WORKERS": 5,
+    "Z85_PUBLIC_KEY": "3>v/vSk6K(WoH?&[lNt@PKBJbj&13xL^B3Gi@^zY",
+    "Z85_PRIVATE_KEY": "rR-t3U8ZSORgL:OUcrC/cp[wwtu1v5Ls/${OH.us",
+    "Z85_PUBLIC_CLIENT_KEY": "2(]@b)A5u}(p&p.xtQ>l.Y>Fzi)NDF*6GqE23zPY",
+    "Z85_PRIVATE_CLIENT_KEY": "qlBVy1z/?5PA&4w(hF7F&qOH{0yz.@0&9z!ZK2yL"
   },
   "HTTP_OPTIONS": {
     "LISTEN": "0.0.0.0:8080",

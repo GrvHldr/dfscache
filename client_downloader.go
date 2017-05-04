@@ -6,14 +6,18 @@ import "fmt"
 import (
 	"flag"
 	"github.com/GrvHldr/dfscache/logger"
-	"github.com/GrvHldr/dfscache/server"
 	zmq "github.com/pebbe/zmq4"
 	"os"
 )
 
-const ZMQCHUNKSIZE = 25000
-
 func main() {
+	const (
+		ZMQCHUNKSIZE = 25000
+		SERVER_PUBLIC_KEY = "3>v/vSk6K(WoH?&[lNt@PKBJbj&13xL^B3Gi@^zY"
+		PUBLIC_CLIENT_KEY = "2(]@b)A5u}(p&p.xtQ>l.Y>Fzi)NDF*6GqE23zPY"
+		PRIVATE_CLIENT_KEY = "qlBVy1z/?5PA&4w(hF7F&qOH{0yz.@0&9z!ZK2yL"
+	)
+
 	var stroid string
 	var credit, chunks, offset int
 	var total int64
@@ -29,6 +33,7 @@ func main() {
 		return
 	}
 	defer dealer.Close()
+	dealer.ClientAuthCurve(SERVER_PUBLIC_KEY, PUBLIC_CLIENT_KEY, PRIVATE_CLIENT_KEY)
 
 	err = dealer.Connect("tcp://127.0.0.1:5555")
 	if err != nil {
